@@ -159,7 +159,7 @@ bool meld::isNumberMeld(std::vector<card> &subset) {
 
 // tests for straight flush (sf) melds
 bool meld::isSFMeld(std::vector<card> &subset) {
-    std::stable_sort(subset.begin(), subset.end(), compareByValue);
+    std::stable_sort(subset.begin(), subset.end(), helpers::compareByValue);
     int suit = subset[0].getSuit();
 
     // all must be same suit

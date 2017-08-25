@@ -5,7 +5,7 @@
 #ifndef UNTITLED_DISCARDPILE_H
 #define UNTITLED_DISCARDPILE_H
 
-#include <array>
+#include <vector>
 #include "card.h"
 
 
@@ -13,6 +13,9 @@ class DiscardPile {
 public:
     // constructs empty discard pile
     DiscardPile();
+
+    // copy constructor
+    DiscardPile(const DiscardPile &copy);
 
     // draw from discard pile
     card draw();
@@ -28,8 +31,12 @@ public:
 
     // returns the card currently on top of the discard pile
     card cardOnTop();
+
+    // returns all cards in discard pile
+    std::vector<card> allCards();
+
 private:
-    std::array<card, 52> discards;
+    std::vector<card> discards;
     int size;
 };
 

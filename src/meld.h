@@ -8,10 +8,11 @@
 #include <vector>
 
 using namespace std;
+namespace helpers {
+    bool compareByValue(const card &a, const card &b);
 
-bool compareByValue(const card &a, const card &b);
-bool compareBySuit(const card &a, const card &b);
-
+    bool compareBySuit(const card &a, const card &b);
+}
 class meld {
 public:
 

@@ -7,7 +7,13 @@
 #include <assert.h>
 
 DiscardPile::DiscardPile() {
+    discards.reserve(52);
     size = 0;
+}
+
+DiscardPile::DiscardPile(const DiscardPile &copy) {
+    discards = copy.discards;
+    size = copy.size;
 }
 
 card DiscardPile::draw() {
@@ -32,4 +38,8 @@ bool DiscardPile::isEmpty() {
 card DiscardPile::cardOnTop() {
     assert(size > 0);
     return discards[size-1];
+}
+
+std::vector<card> DiscardPile::allCards() {
+    return discards;
 }

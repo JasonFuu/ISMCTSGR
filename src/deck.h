@@ -6,11 +6,20 @@
 #define UNTITLED_DECK_H
 
 #include "card.h"
+#include <vector>
+
+using namespace std;
 
 class deck {
 public:
     // 52 card deck constructor
     deck();
+
+    // construct deck from vector of cards
+    deck(std::vector<card> cards);
+
+    // copy constructor
+    deck(const deck &copy);
 
     card draw();
 
@@ -23,8 +32,10 @@ public:
     // for debugging purposes
     void print();
 
+    std::vector<card> allCards();
+
 private:
-    card deckarray[52];
+    std::vector<card> deckarray;
     int size;
 };
 
