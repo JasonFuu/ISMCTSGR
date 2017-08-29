@@ -24,6 +24,9 @@ static int numbersDeadwood(std::vector<card> &subset);
     static int SFDeadwood(std::vector<card> &subset);
 bool isNumberMeld(std::vector<card> &subset);
 bool isSFMeld(std::vector<card> &subset);
+
+    std::vector<card> bestNumberMeld;
+    std::vector<card> bestSFMeld;
 };
 
 

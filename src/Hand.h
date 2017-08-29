@@ -29,6 +29,9 @@ public:
     // returns cards in hand
     std::vector<card> cardsInHand() const;
 
+    // returns number of cards in hand
+    int cardNumber() const;
+
 private:
     std::vector<card> cards;
     int size_index;

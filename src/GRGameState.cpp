@@ -4,6 +4,8 @@
 
 #include "GRGameState.h"
 #include "deck.h"
+#include "Move.h"
+#include "meld.h"
 #include <assert.h>
 
 GRGameState::GRGameState() {
@@ -14,6 +16,9 @@ GRGameState::GRGameState() {
     hands.reserve(2);
     hands[0] = player_one;
     hands[1] = player_two;
+    card_drawn = false;
+    player_to_move = 0;
+    score = 0;
     deal();
 }
 
@@ -59,6 +64,8 @@ GRGameState::GRGameState(const GRGameState &determinize, int observer) {
         player_two.addToHand(current_deck.draw());
     }
     hands[opponent] = player_two;
+    card_drawn = determinize.card_drawn;
+    player_to_move = determinize.player_to_move;
 }
 
 
@@ -71,4 +78,115 @@ void GRGameState::deal() {
         player_two->addToHand(current_deck->draw());
     }
     discards->discard(current_deck->draw());
+    card_drawn = false;
+}
+
+// gets moves from 1 of 3 possible states (before draw, after draw, after discard)
+// depending on which state we are currently in
+std::vector<Move> GRGameState::getMoves() {
+    std::vector<Move> moves;
+    moves.reserve(2);
+
+    // card has not been drawn yet
+    if (!card_drawn) {
+        card_drawn = true;
+        Move deck_draw(static_cast<TYPE >(1));
+        moves.push_back(deck_draw);
+
+        if (discards->cardsInPile() > 0) {
+            Move discard_draw(static_cast<TYPE >(2));
+            moves.push_back(discard_draw);
+        }
+
+        return moves;
+    }
+
+    // card has been drawn but not discarded
+    if (hands[player_to_move].cardNumber() == 11) {
+        std::vector<card> hand = hands[player_to_move].cardsInHand();
+        for (int i = 0; i < hand.size(); i++) {
+            Move next(static_cast<TYPE >(0), hand[i]);
+            moves.push_back(next);
+        }
+
+        return moves;
+    }
+
+    // card has been discarded - can we knock now?
+    if (hands[player_to_move].cardNumber() == 10) {
+        Move knock(static_cast<TYPE>(3));
+        Move no_knock(static_cast<TYPE>(4));
+        moves.push_back(knock);
+        moves.push_back(no_knock);
+        return moves;
+    }
+}
+
+void GRGameState::doMove(Move &move) {
+    switch (move.type) {
+        case CARD:
+            discardMove(move.stored_card);
+            break;
+        case DECK_DRAW:
+            deckDrawMove();
+            break;
+        case DISCARD_DRAW:
+            discardPileDrawMove();
+            break;
+        case KNOCK:
+            knockMove();
+            break;
+        case NOKNOCK:
+            noKnockMove();
+            break;
+    }
+}
+
+void GRGameState::deckDrawMove() {
+    card drawn = current_deck->draw();
+    hands[player_to_move].addToHand(drawn);
+}
+
+void GRGameState::discardPileDrawMove() {
+    card drawn = discards->draw();
+    hands[player_to_move].addToHand(drawn);
+}
+
+void GRGameState::discardMove(card &input) {
+    discards->discard(input);
+    player_to_move = getOtherPlayer(player_to_move);
+}
+
+void GRGameState::knockMove() {
+    std::vector<card> knocker_hand = hands[player_to_move].cardsInHand();
+    std::vector<card> other_hand = hands[getOtherPlayer(player_to_move)].cardsInHand();
+    int knocker_score = meld::findDeadwood(knocker_hand);
+    int ginConstant;
+
+    // going GIN; no chance to play off melds
+    if (knocker_score == 0) {
+        if (knocker_hand.size() == 11) ginConstant = 31;
+        else ginConstant = 25;
+
+        score = ginConstant + meld::findDeadwood(other_hand);
+    }
+
+    else {
+
+    }
+
+}
+
+void GRGameState::noKnockMove() {
+    player_to_move = getOtherPlayer(player_to_move);
+}
+
+int GRGameState::getResult() {
+    return score;
+}
+
+// helper method that returns other player
+int getOtherPlayer(int player) {
+    if (player == 0) return 1;
+    return 0;
 }

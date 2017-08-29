@@ -57,6 +57,11 @@ std::vector<card> Hand::cardsInHand() const {
     return cards;
 }
 
+// returns number of cards in hand
+int Hand::cardNumber() const {
+    return size_index;
+}
+
 std::ostream& operator<< (std::ostream &out, Hand const &hand) {
     for (card input : hand.cardsInHand()) {
         out << input;

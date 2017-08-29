@@ -61,7 +61,9 @@ int meld::findDeadwood(std::vector<card> &hand) {
 
         deadwood_calc = numbersDeadwood(numberMelds) + SFDeadwood(SFMelds);
 
-        if (deadwood_calc < best_deadwood) best_deadwood = deadwood_calc;
+        if (deadwood_calc < best_deadwood) {
+            best_deadwood = deadwood_calc;
+        }
 
     }
     return best_deadwood;

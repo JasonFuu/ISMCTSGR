@@ -9,6 +9,7 @@
 #include "deck.h"
 #include "DiscardPile.h"
 #include "hand.h"
+#include "Move.h"
 #include <vector>
 
 class GRGameState {
@@ -28,11 +29,11 @@ public:
      *  knock (if 10 or fewer deadwood)
      *  */
 
-    void draw();
+    std::vector<Move> getMoves();
 
-    void discard(card &toDiscard);
+    void doMove(Move &move);
 
-    void knock();
+
 
 
 private:
@@ -41,7 +42,25 @@ private:
     Hand *player_two;
     DiscardPile *discards;
     deck *current_deck;
+    int player_to_move;
+    int score;
+
+    // has a card been drawn in this round yet (used to differentiate between states)
+    bool card_drawn;
+
+    void deckDrawMove();
+
+    void discardPileDrawMove();
+
+    void discardMove(card &toDiscard);
+
+    void knockMove();
+
+    void noKnockMove();
+
+    int getResult();
 };
 
+int getOtherPlayer(int player);
 
 #endif //UNTITLED_GRGAMESTATE_H
