@@ -160,21 +160,64 @@ void GRGameState::discardMove(card &input) {
 void GRGameState::knockMove() {
     std::vector<card> knocker_hand = hands[player_to_move].cardsInHand();
     std::vector<card> other_hand = hands[getOtherPlayer(player_to_move)].cardsInHand();
-    int knocker_score = meld::findDeadwood(knocker_hand);
+    meld knocker(knocker_hand);
+    meld other(other_hand);
+    int knocker_deadwood = knocker.deadwoodValue();
+    int other_deadwood = other.deadwoodValue();
     int ginConstant;
 
     // going GIN; no chance to play off melds
-    if (knocker_score == 0) {
+    if (knocker_deadwood == 0) {
         if (knocker_hand.size() == 11) ginConstant = 31;
         else ginConstant = 25;
 
-        score = ginConstant + meld::findDeadwood(other_hand);
+        score = ginConstant + other_deadwood;
     }
 
+        // no GIN, see which melds non-knocker can play off of and see if an undercut occurred
     else {
+        std::vector<int> toBeRemoved(10);
+        std::vector<card> other_non_meld = other.nonMeldCards();
+        // can be played off numbers meld if card has value equal to any members
+        for (int i = 0; i < other_non_meld.size(); i++) {
+            for (card member : other.numbersMeldCards()) {
+                if (member.getValue() == other_non_meld[i].getValue()) toBeRemoved.push_back(i);
+            }
+        }
 
+        // recalc deadwood and remove cards that can be played off
+        for (int i : toBeRemoved) {
+            other_deadwood -= other_non_meld[i].getDeadwood();
+            other_non_meld[i] = other_non_meld.back();
+            other_non_meld.pop_back();
+        }
+
+        toBeRemoved.clear();
+        toBeRemoved.reserve(10);
+
+        for (int i = 0; i < other_non_meld.size(); i++) {
+            for (card member : other.SFMeldCards()) {
+                // if card has same suit and consecutive value of any member cards, it can be played off the meld
+                if ((member.getValue() - 1 == other_non_meld[i].getValue() || member.getValue() + 1 == other_non_meld[i].getValue())
+                    && member.getSuit() == other_non_meld[i].getSuit())
+                    toBeRemoved.push_back(i);
+            }
+        }
+
+        // recalc deadwood and remove cards that can be played off
+        for (int i : toBeRemoved) {
+            other_deadwood -= other_non_meld[i].getDeadwood();
+            other_non_meld[i] = other_non_meld.back();
+            other_non_meld.pop_back();
+        }
+
+        // if undercut occurred
+        if (other_deadwood < knocker_deadwood) {
+            score = -25 + (knocker_deadwood - other_deadwood);
+        }
+
+        else score = knocker_deadwood - other_deadwood;
     }
-
 }
 
 void GRGameState::noKnockMove() {
