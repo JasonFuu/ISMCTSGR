@@ -9,6 +9,8 @@
 #include <limits>
 #include <bitset>
 #include <math.h>
+#include <iostream>
+
 
 using namespace std;
 
@@ -27,17 +29,17 @@ meld::meld() {};
 
 // returns deadwood value of a hand by looking at all 2^(hand size) number/sf meld possibilities
 // index 0 -> number meld, index 1 -> sf meld
-int meld::findDeadwood(std::vector<card> &hand) {
-    int best_deadwood = std::numeric_limits<int>::max();
+meld::meld(std::vector<card> &hand) {
+
+    best_deadwood = std::numeric_limits<int>::max();
     int const max_hand_size = 11;
     int deadwood_calc;
 
     std::vector<card> numberMelds;
     std::vector<card> SFMelds;
 
-
     for (int i = 0; i < pow(2.0, hand.size()); i++) {
-        // issues with const, we just hard code max hand size (11)
+        // issues with const, we just hard code max double hand size (20)
         std::bitset<max_hand_size> x(i);
         std::string s = x.to_string();
         std::reverse(s.begin(), s.end());
@@ -63,10 +65,125 @@ int meld::findDeadwood(std::vector<card> &hand) {
 
         if (deadwood_calc < best_deadwood) {
             best_deadwood = deadwood_calc;
+            bestNumberMeld = numberMelds;
+            bestSFMeld = SFMelds;
+        }
+    }
+
+    // clean up Number meld and SF meld vectors st they only contain meld members
+    std::vector<int> toBeDeleted(max_hand_size);
+    nonMeldMembers.reserve(max_hand_size);
+    std::stable_sort(bestNumberMeld.begin(), bestNumberMeld.end(), helpers::compareByValue);
+    int card_index = 0;
+    int counter = 1;
+    int current_index = 0;
+    int current_value;
+
+    // find cards in number melds vector that aren't meld members
+    while (current_index < bestNumberMeld.size()) {
+        card_index = current_index;
+        current_value = bestNumberMeld[card_index].getValue();
+        counter = 1;
+        while (current_value == bestNumberMeld[++card_index].getValue()) {
+            counter++;
         }
 
+        // if no meld with current card, increment index and search
+        if (counter < 3) {
+            toBeDeleted.push_back(current_index);
+            current_index++;
+        }
+            // if meld, increment index by size of meld
+        else current_index += counter;
+
     }
+
+    toBeDeleted.erase(unique(toBeDeleted.begin(), toBeDeleted.end()), toBeDeleted.end());
+
+    // now clear melds vector of non meld elements and add them to nonmeld vector
+    for (int i : toBeDeleted) {
+        nonMeldMembers.push_back(bestNumberMeld[i]);
+        bestNumberMeld[i] = bestNumberMeld.back();
+        bestNumberMeld.pop_back();
+    }
+
+    // now clean up SF melds vector
+    std::stable_sort(bestSFMeld.begin(), bestSFMeld.end(), helpers::compareByValue);
+    std::stable_sort(bestSFMeld.begin(), bestSFMeld.end(), helpers::compareBySuit);
+
+    // reset
+    toBeDeleted.clear();
+    toBeDeleted.reserve(11);
+    card_index = 0;
+    counter = 1;
+    current_index = 0;
+    int current_suit;
+
+    // find cards in SF melds vector that aren't meld members
+    while (current_index < bestSFMeld.size()) {
+
+        card_index = current_index;
+        current_value = bestSFMeld[card_index].getValue();
+        current_suit = bestSFMeld[card_index].getSuit();
+        counter = 1;
+
+        // next card has to be one higher and the same suit
+        while (++current_value == bestSFMeld[++card_index].getValue() && current_suit == bestSFMeld[card_index].getSuit()) {
+            counter++;
+        }
+
+        // if it is not a meld
+        if (counter < 3) {
+            toBeDeleted.push_back(current_index);
+            current_index++;
+        }
+
+        else current_index += counter;
+    }
+
+
+    // now clear melds vector of non meld elements and add them to nonmeld vector
+    for (int i : toBeDeleted) {
+        nonMeldMembers.push_back(bestNumberMeld[i]);
+        bestSFMeld[i] = bestSFMeld.back();
+        bestSFMeld.pop_back();
+    }
+}
+
+// returns deadwood value of this hand
+int meld::deadwoodValue() {
     return best_deadwood;
+}
+
+// returns true if input card can be played off the melds in this hand (for knocks)
+bool meld::canPlayOffMeld(card &input) {
+
+    // for the numbers meld vector, the card can be played if it has the same value as any of the other cards
+    for (card next : bestNumberMeld) {
+        if (input.getValue() == next.getValue()) return true;
+    }
+
+    // for the SF meld vector, the card can be played if it has the same suit and consecutive value of any of the cards
+    for (card next : bestSFMeld) {
+        if (input.getSuit() == next.getSuit() || input.getValue() + 1 == next.getValue() || input.getValue() - 1 == next.getValue())
+            return true;
+    }
+    return false;
+}
+
+// final numbers meld members
+std::vector<card> meld::numbersMeldCards() {
+    return bestNumberMeld;
+}
+
+// final SF meld members
+std::vector<card> meld::SFMeldCards() {
+    return bestSFMeld;
+}
+
+// final non meld members
+std::vector<card> meld::nonMeldCards() {
+    return nonMeldMembers;
 }
 
 // returns deadwood value of "Numbers" melds vector
@@ -99,7 +216,7 @@ int meld::numbersDeadwood(std::vector<card> &subset) {
     return total_sum;
 }
 
-// returns deadwood value of "SF" melds vector
+// returns deadwood value of "straight flush" melds vector
 int meld::SFDeadwood(std::vector<card> &subset) {
     // sort by value then suit
     std::stable_sort(subset.begin(), subset.end(), helpers::compareByValue);
